@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABABOU PLANS</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FontAwesome (Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fdf8f6',
+                            100: '#f2e8e5',
+                            200: '#eaddd7',
+                            300: '#e0cec7',
+                            400: '#d2bab0',
+                            500: '#a18072', // Warm neutral primary
+                            600: '#8a6a5c',
+                            700: '#725548',
+                            800: '#5e4539',
+                            900: '#4a362c',
+                        },
+                        accent: {
+                            light: '#4fd1c5', // Soft Teal
+                            DEFAULT: '#38b2ac',
+                            dark: '#319795',
+                        },
+                        success: '#48bb78',
+                        warning: '#ed8936',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Chart Container Styling - MANDATORY */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a18072; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8a6a5c; 
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .todo-checkbox:checked + div {
+            text-decoration: line-through;
+            color: #a0aec0;
+            background-color: #f7fafc;
+        }
+        
+        .nav-item.active {
+            background-color: #a18072;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background-color: #f9f5f2; /* Warm light neutral background */
+        }
+    </style>
+
+    <!-- Chosen Palette: Warm Neutrals (Earth Tones) with Teal Accents -->
+    <!-- Application Structure Plan: 
+         1. Dashboard Overview: High-level progress, subject weightage visualization.
+         2. Strategic Analysis: Summary of exam trends (2021-2025).
+         3. Interactive Roadmap (The Core): A detailed, filterable TO-DO list divided by subject. User checks off items to update state.
+         4. Simulation & Advice: Tips based on common pitfalls.
+         Why: This structure transforms a static "list of topics" into an actionable project management tool for the student.
+    -->
+    <!-- Visualization & Content Choices:
+         1. Doughnut Chart: To show the relative importance/weight of each domain (Didactics vs Content). Goal: Prioritization.
+         2. Bar Chart: To track user progress per subject based on checked items. Goal: Motivation.
+         3. Dynamic Lists: To present the syllabus items. Interaction: Checkbox to toggle "Done" state.
+         Confirmation: NO SVG used. NO Mermaid used. Chart.js used for data viz.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+</head>
+<body class="text-gray-800 font-sans min-h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Mobile Navigation (Top) -->
+    <div class="md:hidden bg-brand-700 text-white p-4 flex justify-between items-center z-50 shadow-md">
+        <h1 class="font-bold text-lg">بوابة النجاح 2025</h1>
+        <button id="mobile-menu-btn" class="text-white focus:outline-none">
+            <i class="fas fa-bars text-xl"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="bg-brand-800 text-white w-full md:w-64 flex-shrink-0 hidden md:flex flex-col h-screen shadow-xl z-40 transition-all duration-300 absolute md:relative">
+        <div class="p-6 border-b border-brand-600 bg-brand-900">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white font-bold text-xl">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h2 class="font-bold text-lg tracking-wide">الاستعداد الشامل</h2>
+                    <p class="text-xs text-brand-300">مباراة التعليم الابتدائي</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-2">
+            <button onclick="switchView('dashboard')" class="nav-item active w-full text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-brand-700">
+                <i class="fas fa-chart-pie w-6 text-center"></i>
+                <span>لوحة القيادة</span>
+            </button>
+            
+            <div class="px-4 py-2 text-xs font-bold text-brand-400 uppercase tracking-wider mt-4">المواد والمجالات</div>
+            
+            <button onclick="switchView('arabic')" class="nav-item w-full text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-brand-700">
+                <i class="fas fa-language w-6 text-center"></i>
+                <span>اللغة العربية وديداكتيكها</span>
+            </button>
+            <button onclick="switchView('french')" class="nav-item w-full text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-brand-700">
+                <i class="fas fa-comment-dots w-6 text-center"></i>
+                <span>اللغة الفرنسية وديداكتيكها</span>
+            </button>
+            <button onclick="switchView('math')" class="nav-item w-full text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-brand-700">
+                <i class="fas fa-calculator w-6 text-center"></i>
+                <span>الرياضيات وديداكتيكها</span>
+            </button>
+            <button onclick="switchView('science')" class="nav-item w-full text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-brand-700">
+                <i class="fas fa-flask w-6 text-center"></i>
+                <span>النشاط العلمي وديداكتيكه</span>
+            </button>
+            <button onclick="switchView('education')" class="nav-item w-full text-right px-4 py-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-brand-700">
+                <i class="fas fa-book-reader w-6 text-center"></i>
+                <span>علوم التربية والمستجدات</span>
+            </button>
+        </nav>
+
+        <div class="p-4 bg-brand-900 border-t border-brand-600">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm">التقدم العام</span>
+                <span id="global-progress-text" class="text-sm font-bold text-accent">0%</span>
+            </div>
+            <div class="w-full bg-brand-700 rounded-full h-2.5">
+                <div id="global-progress-bar" class="bg-accent h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 h-screen overflow-y-auto p-4 md:p-8 relative">
+        
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="space-y-8 animate-fade-in">
+            <header class="mb-8">
+                <h1 class="text-3xl font-bold text-brand-800 mb-2">مرحباً بك في برنامج التميز</h1>
+                <p class="text-gray-600 max-w-3xl">
+                    بناءً على تحليل امتحانات 2021-2024 وتوصيفات الوزارة، قمت بإعداد هذه الخطة التفاعلية. 
+                    هدفنا ليس فقط المراجعة، بل "استهداف" المواضيع الأكثر تكراراً والأعلى وزناً في التنقيط.
+                </p>
+            </header>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-panel p-6 rounded-xl shadow-sm border-r-4 border-accent">
+                    <h3 class="text-gray-500 text-sm font-medium mb-1">المهام المنجزة</h3>
+                    <div class="flex items-baseline">
+                        <span id="stat-completed" class="text-3xl font-bold text-brand-800">0</span>
+                        <span id="stat-total" class="mr-2 text-sm text-gray-400">/ 0</span>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 rounded-xl shadow-sm border-r-4 border-warning">
+                    <h3 class="text-gray-500 text-sm font-medium mb-1">المادة الأكثر إلحاحاً</h3>
+                    <div id="urgent-subject" class="text-xl font-bold text-brand-800">الفرنسية</div>
+                    <p class="text-xs text-gray-400 mt-1">بناء على قلة التقدم</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl shadow-sm border-r-4 border-brand-500">
+                    <h3 class="text-gray-500 text-sm font-medium mb-1">أيام الدراسة المتبقية</h3>
+                    <div class="text-3xl font-bold text-brand-800">مفتوح</div>
+                    <p class="text-xs text-gray-400 mt-1">استمر في العمل اليومي</p>
+                </div>
+            </div>
+
+            <!-- Analysis & Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Exam Structure Analysis -->
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-lg mb-4 text-brand-800 border-b pb-2">تحليل هيكلة الامتحان (الوزن النسبي)</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        يوضح هذا المبيان أهمية الديداكتيك مقارنة بالمعارف الأكاديمية. لاحظ أن الديداكتيك وعلوم التربية يشكلان الجزء الأكبر من النجاح المهني.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="weightChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Progress Analysis -->
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-lg mb-4 text-brand-800 border-b pb-2">تتبع التقدم حسب المادة</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        مبيان حي يتفاعل مع إنجازك للمهام في القوائم المفصلة. يجب أن تكون الأعمدة متوازنة لضمان نقطة جيدة في كل المواد الإقصائية.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Box -->
+            <div class="bg-brand-50 border border-brand-200 rounded-xl p-6">
+                <h3 class="font-bold text-brand-800 mb-2"><i class="fas fa-lightbulb text-yellow-500 ml-2"></i>تحليل الخبير (2021-2025)</h3>
+                <ul class="space-y-2 text-sm text-gray-700 list-disc list-inside">
+                    <li><strong>التحول نحو QCM:</strong> الامتحانات الأخيرة تعتمد بشكل كبير على الأسئلة متعددة الاختيارات، خاصة في اللغة الفرنسية والعلوم. هذا يتطلب دقة في المعلومة وليس الحفظ السردي.</li>
+                    <li><strong>هيمنة الديداكتيك:</strong> لم يعد يكفي معرفة "كيف نعرب"، بل يجب معرفة "كيف نُدرس الإعراب". الأسئلة أصبحت وضعيات مشكلة مهنية (Situations professionnelles).</li>
+                    <li><strong>المستجدات:</strong> خارطة الطريق 2022-2026 ومدرسة الريادة هي مواضيع الساعة. توقع أسئلة حول التدريس وفق المستوى المناسب (TaRL).</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Dynamic Subject View (Template) -->
+        <div id="view-subject" class="hidden space-y-6 animate-fade-in">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border-r-4 border-brand-500">
+                <div>
+                    <h2 id="subject-title" class="text-2xl font-bold text-brand-800">عنوان المادة</h2>
+                    <p id="subject-desc" class="text-gray-600 text-sm mt-1">وصف موجز للأهمية</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-center">
+                        <span id="subject-percent" class="block text-2xl font-bold text-accent">0%</span>
+                        <span class="text-xs text-gray-500">منجز</span>
+                    </div>
+                    <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div id="subject-progress-bar" class="h-full bg-accent transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Tabs -->
+            <div class="flex gap-2 border-b border-gray-200 pb-1 overflow-x-auto">
+                <button onclick="filterTasks('all')" class="px-4 py-2 rounded-t-lg bg-brand-100 text-brand-800 font-medium hover:bg-brand-200 text-sm">الكل</button>
+                <button onclick="filterTasks('knowledge')" class="px-4 py-2 rounded-t-lg bg-white text-gray-600 hover:bg-gray-50 text-sm">المعارف الأكاديمية</button>
+                <button onclick="filterTasks('didactics')" class="px-4 py-2 rounded-t-lg bg-white text-gray-600 hover:bg-gray-50 text-sm">الديداكتيك (المنهجية)</button>
+            </div>
+
+            <!-- Task List Container -->
+            <div id="tasks-container" class="grid grid-cols-1 gap-3">
+                <!-- Tasks injected via JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- DATA STORE ---
+        // Based on analysis of exams 2021-2025 and official frameworks (Cadres de Référence)
+        const subjectsData = {
+            arabic: {
+                title: "اللغة العربية وديداكتيكها",
+                description: "التركيز على قواعد اللغة الوظيفية ومنهجية تدريس المكونات.",
+                tasks: [
+                    // Knowledge
+                    { id: 'ar_1', text: "ضبط قواعد الإعراب الأساسية (النواسخ، المفاعيل، التوابع)", category: "knowledge", type: "high" },
+                    { id: 'ar_2', text: "إتقان قواعد الصرف (الميزان الصرفي، تصريف المعتل والصحيح، المشتقات)", category: "knowledge", type: "high" },
+                    { id: 'ar_3', text: "قواعد الإملاء (الهمزات، التاء المربوطة والمبسوطة، الألف اللينة)", category: "knowledge", type: "medium" },
+                    { id: 'ar_4', text: "البلاغة والأساليب (التشبيه، الاستعارة، الطباق - مستوى أساسي)", category: "knowledge", type: "low" },
+                    // Didactics
+                    { id: 'ar_5', text: "استيعاب منهجية تدريس القراءة (المستويات الدنيا: الوعي الصوتي، المبدأ الألفبائي)", category: "didactics", type: "high" },
+                    { id: 'ar_6', text: "منهجية تدريس القراءة (المستويات العليا: استراتيجيات الفهم القرائي)", category: "didactics", type: "high" },
+                    { id: 'ar_7', text: "خطوات درس التراكيب والصرف والتحويل (بناء المفهوم، الترييض، التقويم)", category: "didactics", type: "high" },
+                    { id: 'ar_8', text: "منهجية التعبير الكتابي والإنشاء (التخطيط، المسودة، المراجعة، العرض)", category: "didactics", type: "medium" },
+                    { id: 'ar_9', text: "إعداد جذاذة نمطية لدرس لغوي ودرس قرائي", category: "didactics", type: "high" },
+                    { id: 'ar_10', text: "تحليل وضعية تقويمية (تحديد نوع الخطأ ومصدره ومعالجته)", category: "didactics", type: "high" }
+                ]
+            },
+            french: {
+                title: "الفرنسية وديداكتيكها",
+                description: "السيطرة على صعوبات اللغة والتدريس بالكفايات.",
+                tasks: [
+                    // Knowledge
+                    { id: 'fr_1', text: "Grammaire: Les classes de mots, la phrase simple et complexe, voix active/passive", category: "knowledge", type: "high" },
+                    { id: 'fr_2', text: "Conjugaison: Maîtrise des temps du récit (Imparfait/Passé Simple) et du discours", category: "knowledge", type: "high" },
+                    { id: 'fr_3', text: "Orthographe: Accord du participe passé, pluriel des noms composés", category: "knowledge", type: "medium" },
+                    { id: 'fr_4', text: "Lexique: Synonymie, antonymie, champ lexical, formation des mots", category: "knowledge", type: "medium" },
+                    // Didactics
+                    { id: 'fr_5', text: "Didactique de l'Oral: Compréhension et Production (les étapes méthodologiques)", category: "didactics", type: "high" },
+                    { id: 'fr_6', text: "Didactique de la Lecture: Phonèmes (1-2 AP) vs Lecture compréhension (3-6 AP)", category: "didactics", type: "high" },
+                    { id: 'fr_7', text: "Didactique de l'Écrit: Production écrite (Planification, Mise en texte, Révision)", category: "didactics", type: "medium" },
+                    { id: 'fr_8', text: "Fiche pédagogique: Savoir structurer une fiche (Objectifs, Tâches, Modalités)", category: "didactics", type: "high" },
+                    { id: 'fr_9', text: "Évaluation et Remédiation: Types d'erreurs et activités de soutien", category: "didactics", type: "high" }
+                ]
+            },
+            math: {
+                title: "الرياضيات وديداكتيكها",
+                description: "القدرة على الحل الرياضي ونقل المعرفة للمتعلم.",
+                tasks: [
+                    // Knowledge
+                    { id: 'mt_1', text: "الأعداد والحساب: العمليات الأربع، الكسور، الأعداد العشرية، القوى", category: "knowledge", type: "high" },
+                    { id: 'mt_2', text: "الهندسة: حساب المساحات والحجوم، مبرهنة فيتاغورس وطاليس (مستوى إعدادي)", category: "knowledge", type: "high" },
+                    { id: 'mt_3', text: "القياس: وحدات الطول، الكتلة، المساحة، الحجم، والزمن", category: "knowledge", type: "medium" },
+                    { id: 'mt_4', text: "التناسبية وتنظيم البيانات (الإحصاء البسيط)", category: "knowledge", type: "medium" },
+                    // Didactics
+                    { id: 'mt_5', text: "نهج الرياضيات: حل المشكلات (La résolution de problèmes) ومراحلها", category: "didactics", type: "high" },
+                    { id: 'mt_6', text: "نظرية الوضعيات الديداكتيكية (بروسو): فعل، صياغة، تصديق، مأسسة", category: "didactics", type: "high" },
+                    { id: 'mt_7', text: "العد والحساب الذهني: تقنيات ومنهجية التدريس", category: "didactics", type: "medium" },
+                    { id: 'mt_8', text: "الأخطاء الشائعة في الرياضيات وكيفية معالجتها (العائق الابستمولوجي)", category: "didactics", type: "medium" },
+                    { id: 'mt_9', text: "إعداد مقاطع تعليمية لدرس في الهندسة ودرس في الأعداد", category: "didactics", type: "high" }
+                ]
+            },
+            science: {
+                title: "النشاط العلمي وديداكتيكه",
+                description: "استيعاب مفاهيم العلوم الأساسية ونهج التقصي.",
+                tasks: [
+                    // Knowledge
+                    { id: 'sc_1', text: "علوم الحياة: وظائف الاقتيات (هضم، تنفس، دوران)، التوالد، دورة الحياة", category: "knowledge", type: "high" },
+                    { id: 'sc_2', text: "العلوم الفيزيائية: حالات المادة، الكهرباء البسيطة، الضوء، الطاقة", category: "knowledge", type: "high" },
+                    { id: 'sc_3', text: "علوم الأرض والفضاء: تعاقب الليل والنهار، الفصول، النظام الشمسي", category: "knowledge", type: "medium" },
+                    // Didactics
+                    { id: 'sc_4', text: "نهج التقصي (Démarche d'investigation): مراحله وخطواته بالتفصيل", category: "didactics", type: "high" },
+                    { id: 'sc_5', text: "إعداد وضعية انطلاق (Situation déclenchante) وطرح الفرضيات", category: "didactics", type: "high" },
+                    { id: 'sc_6', text: "التجريب والمناولة: كيفية تدبير التجارب في القسم", category: "didactics", type: "medium" },
+                    { id: 'sc_7', text: "المشروع التكنولوجي: خطواته وأهدافه", category: "didactics", type: "low" }
+                ]
+            },
+            education: {
+                title: "علوم التربية والمستجدات",
+                description: "الإطار النظري والقانوني للمهنة.",
+                tasks: [
+                    // Theories
+                    { id: 'ed_1', text: "نظريات التعلم: السلوكية، البنائية، السوسيوبنائية، المعرفية (روادها ومفاهيمها)", category: "knowledge", type: "high" },
+                    { id: 'ed_2', text: "علم النفس النمو: مراحل النمو عند بياجيه وفرويد (الطفولة والمراهقة)", category: "knowledge", type: "high" },
+                    { id: 'ed_3', text: "البيداغوجيات النشطة: الفارقية، الخطأ، اللعب، المشروع، حل المشكلات", category: "knowledge", type: "high" },
+                    // Legislation & Reform
+                    { id: 'ed_4', text: "القانون الإطار 51.17: المبادئ والمرتكزات الأساسية", category: "knowledge", type: "medium" },
+                    { id: 'ed_5', text: "خارطة الطريق 2022-2026: الأهداف والالتزامات", category: "knowledge", type: "high" },
+                    { id: 'ed_6', text: "مقاربة التدريس وفق المستوى المناسب (TaRL): المبادئ والسيرورة", category: "knowledge", type: "high" },
+                    { id: 'ed_7', text: "الحياة المدرسية: الأندية، مشروع المؤسسة، مجالس المؤسسة", category: "knowledge", type: "medium" },
+                    { id: 'ed_8', text: "أخلاقيات المهنة والمسؤولية الإدارية والتربوية للمدرس", category: "knowledge", type: "medium" }
+                ]
+            }
+        };
+
+        // State Management
+        let currentView = 'dashboard';
+        let completedTasks = JSON.parse(localStorage.getItem('eduExam_completedTasks')) || [];
+        
+        // Chart Instances
+        let weightChartInst = null;
+        let progressChartInst = null;
+
+        // --- DOM ELEMENTS ---
+        const mainContent = document.querySelector('main');
+        const viewDashboard = document.getElementById('view-dashboard');
+        const viewSubject = document.getElementById('view-subject');
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            updateDashboard();
+            
+            // Mobile Menu Toggle
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('hidden');
+                document.getElementById('sidebar').classList.toggle('absolute');
+                document.getElementById('sidebar').classList.toggle('h-screen');
+                document.getElementById('sidebar').classList.toggle('w-64');
+            });
+        });
+
+        // --- NAVIGATION ---
+        function switchView(viewName) {
+            currentView = viewName;
+            
+            // Update UI Sidebar
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+                if (el.getAttribute('onclick').includes(viewName)) {
+                    el.classList.add('active');
+                }
+            });
+
+            // Toggle Views
+            if (viewName === 'dashboard') {
+                viewSubject.classList.add('hidden');
+                viewDashboard.classList.remove('hidden');
+                updateDashboard();
+            } else {
+                viewDashboard.classList.add('hidden');
+                viewSubject.classList.remove('hidden');
+                renderSubjectView(viewName);
+            }
+
+            // Close mobile menu if open
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+            }
+        }
+
+        // --- RENDER LOGIC ---
+        function renderSubjectView(subjectKey) {
+            const data = subjectsData[subjectKey];
+            document.getElementById('subject-title').innerText = data.title;
+            document.getElementById('subject-desc').innerText = data.description;
+            
+            renderTasks(subjectKey, 'all');
+            updateSubjectProgress(subjectKey);
+        }
+
+        function renderTasks(subjectKey, filter) {
+            const container = document.getElementById('tasks-container');
+            container.innerHTML = '';
+            
+            const tasks = subjectsData[subjectKey].tasks;
+            
+            tasks.forEach(task => {
+                if (filter !== 'all' && task.category !== filter) return;
+
+                const isChecked = completedTasks.includes(task.id);
+                const priorityColor = task.type === 'high' ? 'border-red-400 bg-red-50' : (task.type === 'medium' ? 'border-orange-300' : 'border-green-300');
+                const badge = task.type === 'high' ? '<span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded mr-2">أولوية قصوى</span>' : '';
+                
+                const div = document.createElement('div');
+                div.className = `flex items-center p-4 bg-white rounded-lg shadow-sm border-r-4 ${priorityColor} transition-all hover:shadow-md cursor-pointer`;
+                div.onclick = (e) => toggleTask(task.id, subjectKey);
+                
+                div.innerHTML = `
+                    <label class="flex items-center w-full cursor-pointer">
+                        <input type="checkbox" class="todo-checkbox form-checkbox h-5 w-5 text-brand-600 rounded focus:ring-brand-500 transition duration-150 ease-in-out" 
+                        ${isChecked ? 'checked' : ''}>
+                        <div class="mr-3 flex-1 text-gray-700 ${isChecked ? 'line-through text-gray-400' : ''}">
+                            ${task.text}
+                            ${badge}
+                        </div>
+                    </label>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterTasks(category) {
+            // Re-render current subject with filter
+            renderTasks(currentView, category);
+            
+            // Update active tab style
+            const tabs = document.querySelectorAll('#view-subject button');
+            tabs.forEach(btn => {
+                if(btn.getAttribute('onclick').includes(category)) {
+                    btn.classList.remove('bg-white', 'text-gray-600');
+                    btn.classList.add('bg-brand-100', 'text-brand-800');
+                } else {
+                    btn.classList.add('bg-white', 'text-gray-600');
+                    btn.classList.remove('bg-brand-100', 'text-brand-800');
+                }
+            });
+        }
+
+        // --- INTERACTION ---
+        function toggleTask(taskId, subjectKey) {
+            if (completedTasks.includes(taskId)) {
+                completedTasks = completedTasks.filter(id => id !== taskId);
+            } else {
+                completedTasks.push(taskId);
+            }
+            
+            localStorage.setItem('eduExam_completedTasks', JSON.stringify(completedTasks));
+            
+            // Re-render to show strike-through
+            renderTasks(subjectKey, 'all'); // Reset filter to all or keep current filter logic (simplified here)
+            updateSubjectProgress(subjectKey);
+            updateDashboard(); // Update global stats in background
+        }
+
+        function updateSubjectProgress(subjectKey) {
+            const tasks = subjectsData[subjectKey].tasks;
+            const total = tasks.length;
+            const done = tasks.filter(t => completedTasks.includes(t.id)).length;
+            const percent = Math.round((done / total) * 100);
+            
+            document.getElementById('subject-percent').innerText = `${percent}%`;
+            document.getElementById('subject-progress-bar').style.width = `${percent}%`;
+        }
+
+        function updateDashboard() {
+            // Calculate Global Stats
+            let totalTasks = 0;
+            let totalDone = 0;
+            const subjectProgress = [];
+            const subjectLabels = [];
+            
+            for (const [key, data] of Object.entries(subjectsData)) {
+                const sTotal = data.tasks.length;
+                const sDone = data.tasks.filter(t => completedTasks.includes(t.id)).length;
+                totalTasks += sTotal;
+                totalDone += sDone;
+                
+                subjectProgress.push(Math.round((sDone / sTotal) * 100));
+                subjectLabels.push(data.title.split(' ')[0]); // First word for label
+            }
+
+            const globalPercent = totalTasks === 0 ? 0 : Math.round((totalDone / totalTasks) * 100);
+            
+            // Update DOM
+            document.getElementById('global-progress-text').innerText = `${globalPercent}%`;
+            document.getElementById('global-progress-bar').style.width = `${globalPercent}%`;
+            document.getElementById('stat-completed').innerText = totalDone;
+            document.getElementById('stat-total').innerText = `/ ${totalTasks}`;
+
+            // Update Charts if they exist
+            if (progressChartInst) {
+                progressChartInst.data.datasets[0].data = subjectProgress;
+                progressChartInst.update();
+            }
+        }
+
+        // --- CHARTS ---
+        function initCharts() {
+            // Chart 1: Weightage (Static based on Exam Specs)
+            const ctx1 = document.getElementById('weightChart').getContext('2d');
+            weightChartInst = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['العربية', 'الفرنسية', 'الرياضيات', 'العلوم', 'علوم التربية'],
+                    datasets: [{
+                        data: [20, 20, 15, 10, 35], // Approximate weight including didactics
+                        backgroundColor: ['#a18072', '#8a6a5c', '#38b2ac', '#4fd1c5', '#ed8936'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: 'Tajawal' } } }
+                    }
+                }
+            });
+
+            // Chart 2: Progress (Dynamic)
+            const ctx2 = document.getElementById('progressChart').getContext('2d');
+            progressChartInst = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['العربية', 'الفرنسية', 'الرياضيات', 'العلوم', 'علوم التربية'],
+                    datasets: [{
+                        label: 'نسبة الإنجاز %',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: '#38b2ac',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.raw + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
